@@ -19,95 +19,86 @@ const path = require('path');
 
 const app = express();
 const PORT = 8080;
-
+//add the bodyParser
 app.use(bodyParser.urlencoded({extended: true}));
+//add the template engine ejs
 app.set("view engine", "ejs");
 
-const dbFilePath = path.join(__dirname, 'db', 'urls_db.js');
+//Setup and read in the url database
 let urlDatabase = null;
-console.log("filepath:", dbFilePath);
-
-urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xk": "http://www.google.com"
-};
-/* ****TODO will have to troubleshoot this later.****
-fs.readfile(dbFilePath, 'utf8', (err, fileContent) => {
+//console.log("filepath:", dbFilePath);
+const dbFilePath = path.join(__dirname, 'db', 'urls_db.js');
+//Read the database file in.
+fs.readFile(dbFilePath, (err, fileContent) => {
   if (err) {
     //display the error 
     //response.statusCode = 500;
     //response.write(err.message);
   } else {
-    //urlDatabase = fileContent;
-    
+    urlDatabase = JSON.parse(fileContent);
     console.log("urlDatabase:", urlDatabase);
   }
 });
-*/
 
-/*
-{
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xk": "http://www.google.com"
-};
-*/
-app.get("/", (req, res) => {
-  res.send("hello!");
-});
+//*****ROUTES********
+//*******************
+//show the Database Object in JSON
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
+//Show List of URLs
 app.get("/urls", (req, res) => {
+  const temp = urlDatabase;
   const templateVars = { urls: urlDatabase };
   res.render("urls_index", templateVars);
 });
-//new url
+//Show new URL page
 app.get("/urls/new", (req, res)=> {
   res.render("urls_new");
 });
-app.get("/urls/404", (req, res)=> {
-  res.render("urls_404");
-});
 
-//shortened urls
+//Show shortened url 
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   res.render("urls_show", templateVars);
 });
-//shortened urls
+//shortened single url
 app.get("/u/:shortURL", (req, res) => {
   const longURL  = urlDatabase[req.params.shortURL];
   //const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   if (longURL !== undefined) {
     res.redirect(longURL);
   } else {
-    res.redirect("/urls/404/");
+    res.redirect("/urls");
   }
 });
-
-
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-})
-
+//write a new URL to the list
 app.post("/urls", (req, res) => {
   console.log(req.body);  // Log the POST request body to the console
   const newShortURL = generateRandomString();
   urlDatabase[newShortURL] = req.body.longURL;
-  /*//TODO add writefile to save the database here.
-  fs.writefile(dbFilePath, urlDatabase, function(err) {
+  //Writefile to save the database here.
+  fs.writeFile(dbFilePath, JSON.stringify(urlDatabase), function(err) {
     if(err) {
         return console.log(err);
     }
     console.log("The file was saved!");
   });
-  */ 
-  //res.send("Ok");         // Respond with 'Ok' (we will replace this)
   //redirection to /urls/:shortURL
   res.redirect("/urls/" + newShortURL);
 });
 
 /*
+urlDatabase = {
+  "b2xVn2": "http://www.lighthouselabs.ca",
+  "9sm5xk": "http://www.google.com"
+};
+app.get("/", (req, res) => {
+  res.send("hello!");
+});
+app.get("/hello", (req, res) => {
+  res.send("<html><body>Hello <b>World</b></body></html>\n");
+})
 app.get("/set", (req, res) => {
   const a = 1;
   res.send(`a = ${a}`);
