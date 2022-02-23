@@ -12,6 +12,8 @@ const { application, response } = require("express");
 const express = require("express");
 
 const bodyParser = require("body-parser");
+const cookieParser = require('cookie-parser');
+
 
 //for db persist to file
 const fs = require('fs');
@@ -19,6 +21,8 @@ const path = require('path');
 
 const app = express();
 const PORT = 8080;
+//add the cookie parser
+app.use(cookieParser());
 //add the bodyParser
 app.use(bodyParser.urlencoded({extended: true}));
 //add the template engine ejs
@@ -48,18 +52,29 @@ app.get("/urls.json", (req, res) => {
 });
 //Show List of URLs
 app.get("/urls", (req, res) => {
-
-  const templateVars = { urls: urlDatabase };
+  let templateVars = {};
+  if (req.cookies["username"]) {
+    templateVars = { username: req.cookies["username"], urls: urlDatabase };
+  } else {
+    templateVars = { username: undefined, urls: urlDatabase };
+  }
   res.render("urls_index", templateVars);
 });
 //Show new URL page
 app.get("/urls/new", (req, res)=> {
-  res.render("urls_new");
+  let templateVars = {};
+  if (req.cookies["username"]) {
+    templateVars = { username: req.cookies["username"], urls: urlDatabase };
+  } else {
+    templateVars = { username: undefined, urls: urlDatabase };
+  }
+  res.render("urls_new", templateVars);
 });
 
 //Show shortened url
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+  const templateVars = { username: req.cookies["username"],
+    shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   res.render("urls_show", templateVars);
 });
 //shortened single url
@@ -104,9 +119,6 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 //Update Long url
 app.post("/urls/:shortURL", (req, res) => {
-  //console.log("PARAMS:", req.params);
-  //console.log("BODY:",req.body);
-  //console.log("B-shorturl:",urlDatabase[req.params.shortURL]);
   urlDatabase[req.params.shortURL] = req.body.longURL;
   fs.writeFile(dbFilePath, JSON.stringify(urlDatabase), function(err) {
     if (err) {
@@ -118,6 +130,19 @@ app.post("/urls/:shortURL", (req, res) => {
   //console.log("A-shorturl:",urlDatabase[req.params.shortURL]);
   res.redirect("/urls");
 });
+// header login username
+app.post("/login", (req, res) => {
+  console.log("bodyUserN:",req.body.username);
+  res.cookie("username",req.body.username); //.send("cookie set");
+  console.log("cookie set");
+  res.redirect("/urls");
+});
+// header logout username
+app.post("/logout", (req, res) => {
+  res.clearCookie("username");
+  res.redirect("/urls");
+});
+
 /*
 urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
