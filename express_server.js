@@ -1,4 +1,4 @@
-const generateRandomString = function () {
+const generateRandomString = function() {
   const length =  6;
   const alphaNumeric = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
   let result = '';
@@ -31,7 +31,7 @@ const dbFilePath = path.join(__dirname, 'db', 'urls_db.txt');
 //Read the database file in.
 fs.readFile(dbFilePath, (err, fileContent) => {
   if (err) {
-    //display the error 
+    //display the error
     //response.statusCode = 500;
     //response.write(err.message);
   } else {
@@ -48,7 +48,7 @@ app.get("/urls.json", (req, res) => {
 });
 //Show List of URLs
 app.get("/urls", (req, res) => {
-  const temp = urlDatabase;
+
   const templateVars = { urls: urlDatabase };
   res.render("urls_index", templateVars);
 });
@@ -57,7 +57,7 @@ app.get("/urls/new", (req, res)=> {
   res.render("urls_new");
 });
 
-//Show shortened url 
+//Show shortened url
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   res.render("urls_show", templateVars);
@@ -79,8 +79,8 @@ app.post("/urls", (req, res) => {
   urlDatabase[newShortURL] = req.body.longURL;
   //Writefile to save the database here.
   fs.writeFile(dbFilePath, JSON.stringify(urlDatabase), function(err) {
-    if(err) {
-        return console.log(err);
+    if (err) {
+      return console.log(err);
     }
     console.log("The file was saved!");
   });
@@ -94,23 +94,23 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   delete urlDatabase[selShortURL];
   //Writefile to save the database here.
   fs.writeFile(dbFilePath, JSON.stringify(urlDatabase), function(err) {
-    if(err) {
-        return console.log(err);
+    if (err) {
+      return console.log(err);
     }
     console.log("The file was saved!");
   });
   //redirection to /urls (List)
   res.redirect("/urls");
 });
-//Update Long url 
+//Update Long url
 app.post("/urls/:shortURL", (req, res) => {
   //console.log("PARAMS:", req.params);
   //console.log("BODY:",req.body);
   //console.log("B-shorturl:",urlDatabase[req.params.shortURL]);
   urlDatabase[req.params.shortURL] = req.body.longURL;
   fs.writeFile(dbFilePath, JSON.stringify(urlDatabase), function(err) {
-    if(err) {
-        return console.log(err);
+    if (err) {
+      return console.log(err);
     }
     console.log("The file was saved!");
   });
