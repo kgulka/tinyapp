@@ -26,8 +26,8 @@ app.set("view engine", "ejs");
 
 //Setup and read in the url database
 let urlDatabase = null;
-//console.log("filepath:", dbFilePath);
-const dbFilePath = path.join(__dirname, 'db', 'urls_db.js');
+
+const dbFilePath = path.join(__dirname, 'db', 'urls_db.txt');
 //Read the database file in.
 fs.readFile(dbFilePath, (err, fileContent) => {
   if (err) {
@@ -36,7 +36,7 @@ fs.readFile(dbFilePath, (err, fileContent) => {
     //response.write(err.message);
   } else {
     urlDatabase = JSON.parse(fileContent);
-    console.log("urlDatabase:", urlDatabase);
+    //console.log("urlDatabase:", urlDatabase);
   }
 });
 
@@ -74,7 +74,7 @@ app.get("/u/:shortURL", (req, res) => {
 });
 //write a new URL to the list
 app.post("/urls", (req, res) => {
-  console.log(req.body);  // Log the POST request body to the console
+  //console.log(req.body);  // Log the POST request body to the console
   const newShortURL = generateRandomString();
   urlDatabase[newShortURL] = req.body.longURL;
   //Writefile to save the database here.
@@ -87,7 +87,37 @@ app.post("/urls", (req, res) => {
   //redirection to /urls/:shortURL
   res.redirect("/urls/" + newShortURL);
 });
+//delete a url
+app.post("/urls/:shortURL/delete", (req, res) => {
+  //console.log("PARAMS:", req.params);  // Log the POST request body to the console
+  const selShortURL = req.params.shortURL;
+  delete urlDatabase[selShortURL];
+  //Writefile to save the database here.
+  fs.writeFile(dbFilePath, JSON.stringify(urlDatabase), function(err) {
+    if(err) {
+        return console.log(err);
+    }
+    console.log("The file was saved!");
+  });
+  //redirection to /urls (List)
+  res.redirect("/urls");
+});
+//Update Long url 
+app.post("/urls/:shortURL", (req, res) => {
+  //console.log("PARAMS:", req.params);
+  //console.log("BODY:",req.body);
+  //console.log("B-shorturl:",urlDatabase[req.params.shortURL]);
+  urlDatabase[req.params.shortURL] = req.body.longURL;
+  fs.writeFile(dbFilePath, JSON.stringify(urlDatabase), function(err) {
+    if(err) {
+        return console.log(err);
+    }
+    console.log("The file was saved!");
+  });
 
+  //console.log("A-shorturl:",urlDatabase[req.params.shortURL]);
+  res.redirect("/urls");
+});
 /*
 urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
