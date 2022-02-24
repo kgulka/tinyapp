@@ -5,14 +5,20 @@
       <span class="navbar-toggler-icon"></span>
     </button>
     <div>
-      <% if(username !== undefined) {%>
-        <form method="POST" action="/logout">
-          <label>User: <%= username %></label>
-        <button type="submit">Logout</button> 
-      </form>
+      <% if(user_id !== undefined) {%>
+        <% if(user_id.email !== undefined) {%>
+          <form method="POST" action="/logout">
+            <label>User: <%= user_id.email %></label>
+          <button type="submit">Logout</button> 
+        </form>
+        <% } else { %>
+          <form method="POST" action="/login">
+            <input name="user_id"><button type="submit">Submit</button> 
+          </form>
+        <% } %>
       <% } else { %>
         <form method="POST" action="/login">
-          <input name="username"><button type="submit">Submit</button> 
+          <input name="user_id"><button type="submit">Submit</button> 
         </form>
       <% } %>
     </div>
