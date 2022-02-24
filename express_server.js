@@ -103,20 +103,31 @@ app.get("/register", (req, res) => {
   const templateVars = { user_id: req.cookies["user_id"] };
   res.render("register", templateVars);
 });
+const emailExists = function(usersIn, emailIn) {
+  for (let user in usersIn) {
+    if (usersIn[user].email === emailIn) {
+      return true;
+    }
+  }
+  return false;
+}
 //write a new user to the list
 app.post("/register", (req, res) => {
 
   const newUserID = generateRandomString();
   const { email, password } = req.body;
-  for (let user in users) {
-    if (users[user].email === email) {
-      console.log('email already exists!');
-      return res.redirect("/urls");
-    }
+  
+  if (emailExists(users, email)) {
+    console.log('email already exists!');
+    
+    res.statusCode = 400;
+    return res.send('email already exists!');
   }
   if (!email || !password) {
     console.log('invalid email or password');
-    return res.redirect("/urls");
+
+    res.statusCode = 400;
+    return res.send('invalid email or password');
   }
   users[newUserID] = { id: newUserID, email, password };
   console.log("Users Obj:", users);
