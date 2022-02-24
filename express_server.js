@@ -1,3 +1,4 @@
+/*
 const users = {
   "userRandomID": {
     id: "userRandomID",
@@ -9,6 +10,7 @@ const users = {
     password: "dishwasher-funk"
   }
 };
+*/
 const { application, response } = require("express");
 const express = require("express");
 
@@ -37,6 +39,8 @@ app.set("view engine", "ejs");
 
 //get the path for the url db
 const urlDbFilePath = path.join(__dirname, 'db', 'urls_db.txt');
+//get the path for the user db
+const userDbFilePath = path.join(__dirname, 'db', 'user_db.txt');
 //Setup and read in the url database
 let urlDatabase = {};
 fs.readFile(urlDbFilePath, (err, fileContent) => {
@@ -49,6 +53,28 @@ fs.readFile(urlDbFilePath, (err, fileContent) => {
   }
 });
 
+let users = {};
+fs.readFile(userDbFilePath, (err, fileContent) => {
+  if (err) {
+    //display the error
+    console.log("readFile Error:", err);
+  } else {
+    console.log(JSON.parse(fileContent));
+    users = JSON.parse(fileContent);
+  }
+});
+
+//filter the list of urls by userID 
+const urlsForUser = function(urlDB, userID) {
+  const urlsOut = {};
+  for (let key in urlDB) {
+    if (urlDB[key].userID === userID) {
+      urlsOut[key] = urlDB[key];
+    }
+  }
+  return urlsOut;
+};
+
 //*****ROUTES********
 ////////////GETS/////////////////
 //GET: show the Database Object in JSON
@@ -59,11 +85,16 @@ app.get("/urls.json", (req, res) => {
 app.get("/urls", (req, res) => {
   let templateVars = {};
   if (req.cookies[userCookieName]) {
-    templateVars = { user_id: req.cookies[userCookieName], urls: urlDatabase };
+    templateVars = { user_id: req.cookies[userCookieName], 
+        urls: urlsForUser(urlDatabase, req.cookies[userCookieName].id) };
+    res.render("urls_index", templateVars);
   } else {
-    templateVars = { user_id: undefined, urls: urlDatabase };
+    //console.log("rediriecting");
+    templateVars = { user_id: undefined, urls: undefined};
+    res.render("urls_index", templateVars);
+    //templateVars = { user_id: undefined, urls: urlDatabase };
   }
-  res.render("urls_index", templateVars);
+  
 });
 //GET: Show new URL page
 app.get("/urls/new", (req, res)=> {
@@ -72,7 +103,7 @@ app.get("/urls/new", (req, res)=> {
   } else {
     let templateVars = {};
     if (req.cookies[userCookieName]) {
-      templateVars = { user_id: req.cookies[userCookieName], urls: urlDatabase };
+      templateVars = { user_id: req.cookies[userCookieName], urls: urlsForUser(urlDatabase, req.cookies[userCookieName].id) };
       res.render("urls_new", templateVars);
     } else {
       res.redirect("/login");
@@ -81,9 +112,34 @@ app.get("/urls/new", (req, res)=> {
 });
 //GET: Show shortened url
 app.get("/urls/:shortURL", (req, res) => {
-  const templateVars = { user_id: req.cookies[userCookieName],
-    shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL };
-  res.render("urls_show", templateVars);
+  let templateVars = {};
+  if (req.cookies[userCookieName]) {
+    const urls = urlsForUser(urlDatabase, req.cookies[userCookieName].id); 
+    console.log("shorturl|urls:",urls);
+    if (urls) {
+      console.log("shorturlparam:",req.params.shortURL);
+      if (urls[req.params.shortURL]) {
+        console.log("cookie good, have urls, short url found");
+        templateVars = { user_id: req.cookies[userCookieName],
+        shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL };
+        return res.render("urls_show", templateVars);
+      } else {
+        console.log("cookie good, have urls, shorturl not found");
+        templateVars = { user_id: req.cookies[userCookieName],
+          shortURL: undefined, longURL: undefined };
+        return res.render("urls_show", templateVars);
+      }
+    }
+  } else {
+    console.log("no cookie , no urls, shorturl not found");
+    const templateVars = { user_id: undefined,
+       shortURL: undefined, longURL: undefined };
+       console.log("templateVars1:",templateVars);
+       return res.render("urls_show", templateVars);
+  }
+  //console.log("templateVars:",templateVars);
+  //res.render("urls_show", templateVars);
+  
 });
 //GET: shortened single url
 app.get("/u/:shortURL", (req, res) => {
@@ -136,6 +192,11 @@ app.post("/register", (req, res) => {
   }
   users[newUserID] = { id: newUserID, email, password };
   res.cookie(userCookieName,users[newUserID]);
+  let err = null;
+  writeToDB(userDbFilePath, users, err);
+  if (err) {
+    console.log("DB Write Error:", err);
+  }
   console.log("userid cookie set");
   res.redirect("/urls");
 });
@@ -158,25 +219,40 @@ app.post("/urls", (req, res) => {
 });
 //POST: delete a url
 app.post("/urls/:shortURL/delete", (req, res) => {
-  if (!req.cookies[userCookieName]) {
-    res.send("Unauthorized operation.");
-  } else {
-    const selShortURL = req.params.shortURL;
-    delete urlDatabase[selShortURL];
-    //Writefile to save the database here.
-    let err = null;
-    writeToDB(urlDbFilePath, urlDatabase, err);
-    if (err) {
-      console.log("DB Write Error:", err);
-    }
-    //redirection to /urls (List)
-    res.redirect("/urls");
+  let urls = {};
+  const selShortURL = req.params.shortURL;
+  if (!req.cookies[userCookieName]){
+    return res.send("Unauthorized operation.");
   }
+  urls = urlsForUser(urlDatabase, req.cookies[userCookieName].id);
+  if (!urls[selShortURL]) {
+    return res.send("Unauthorized operation.");
+  }
+  //ok to go ahead with the delete.
+  delete urlDatabase[selShortURL];
+  //Writefile to save the database here.
+  let err = null;
+  writeToDB(urlDbFilePath, urlDatabase, err);
+  if (err) {
+    console.log("DB Write Error:", err);
+  }
+  //redirection to /urls (List)
+   return res.redirect("/urls");
+  
 });
 //POST: Update Long url
 app.post("/urls/:shortURL", (req, res) => {
-
-  urlDatabase[req.params.shortURL].longURL = req.body.longURL;
+  let urls = {};
+  const selShortURL = req.params.shortURL;
+  console.log("selShortURL:", selShortURL);
+  if (!req.cookies[userCookieName]){
+    return res.send("Unauthorized operation.");
+  }
+  urls = urlsForUser(urlDatabase, req.cookies[userCookieName].id);
+  if (!urls[selShortURL]) {
+    return res.send("Unauthorized operation.");
+  }
+  urlDatabase[selShortURL].longURL = req.body.longURL;
   let err = null;
   writeToDB(urlDbFilePath, urlDatabase, err);
   if (err) {
@@ -217,6 +293,7 @@ app.post("/logout", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Eample app listening on port ${PORT}`);
 });
+
 
 /*
 urlDatabase = {
