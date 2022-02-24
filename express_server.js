@@ -2,7 +2,7 @@ const users = {
   "userRandomID": {
     id: "userRandomID",
     email: "user@example.com",
-    password: "purple-monkey-dinosaur"},
+    password: "pmd"},
   "user2RandomID": {
     id: "user2RandomID",
     email: "user2@example.com",
@@ -44,13 +44,13 @@ fs.readFile(urlDbFilePath, (err, fileContent) => {
     //display the error
     console.log("readFile Error:", err);
   } else {
-    console.log(JSON.parse(fileContent))
+    console.log(JSON.parse(fileContent));
     urlDatabase = JSON.parse(fileContent);
   }
-});  
+});
 
 //*****ROUTES********
-//*******************
+////////////GETS/////////////////
 //GET: show the Database Object in JSON
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
@@ -67,36 +67,57 @@ app.get("/urls", (req, res) => {
 });
 //GET: Show new URL page
 app.get("/urls/new", (req, res)=> {
-  let templateVars = {};
-  if (req.cookies[userCookieName]) {
-    templateVars = { user_id: req.cookies[userCookieName], urls: urlDatabase };
+  if (!req.cookies[userCookieName]) {
+    res.redirect("/urls");
   } else {
-    templateVars = { user_id: undefined, urls: urlDatabase };
+    let templateVars = {};
+    if (req.cookies[userCookieName]) {
+      templateVars = { user_id: req.cookies[userCookieName], urls: urlDatabase };
+      res.render("urls_new", templateVars);
+    } else {
+      res.redirect("/login");
+    }
   }
-  res.render("urls_new", templateVars);
 });
 //GET: Show shortened url
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = { user_id: req.cookies[userCookieName],
-    shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
+    shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL].longURL };
   res.render("urls_show", templateVars);
 });
 //GET: shortened single url
 app.get("/u/:shortURL", (req, res) => {
-  const longURL  = urlDatabase[req.params.shortURL];
-
-  if (longURL !== undefined) {
-    res.redirect(longURL);
-  } else {
-    res.redirect("/urls");
+  if (urlDatabase[req.params.shortURL] === undefined) {
+    res.send("URL Not Found");
+    return;
   }
+  const longURL  = urlDatabase[req.params.shortURL].longURL;
+  res.redirect(longURL);
 });
 //GET: register user
 app.get("/register", (req, res) => {
-  const templateVars = { user_id: req.cookies[userCookieName] };
-  res.render("register", templateVars);
+  if (req.cookies[userCookieName]) {
+    res.redirect("/urls");
+  } else {
+    const templateVars = { user_id: req.cookies[userCookieName] };
+    res.render("register", templateVars);
+  }
 });
-
+//GET: login page
+app.get("/login", (req, res) => {
+  if (req.cookies[userCookieName]) {
+    res.redirect("/urls");
+  } else {
+    let templateVars = null;
+    if (req.cookies[userCookieName]) {
+      templateVars = { user_id: req.cookies[userCookieName] };
+    } else {
+      templateVars = { user_id: undefined };
+    }
+    res.render("login",templateVars);
+  }
+});
+////////////POSTS/////////////////
 //POST: write a new user to the list
 app.post("/register", (req, res) => {
   const newUserID = generateRandomString();
@@ -118,50 +139,53 @@ app.post("/register", (req, res) => {
   console.log("userid cookie set");
   res.redirect("/urls");
 });
-
 //POST: write a new URL to the list
 app.post("/urls", (req, res) => {
-  const newShortURL = generateRandomString();
-  urlDatabase[newShortURL] = req.body.longURL;
-  //Writefile to save the database here.
-  if (!writeToDB(urlDbFilePath, urlDatabase, err)) {
-    console.log(err);
-    return;
+  if (!req.cookies[userCookieName]) {
+    res.send("Unauthorized operation.");
+  } else {
+    const newShortURL = generateRandomString();
+    urlDatabase[newShortURL] = { longURL: req.body.longURL, userID: req.cookies[userCookieName].id };
+    //Writefile to save the database here.
+    let err = null;
+    writeToDB(urlDbFilePath, urlDatabase, err);
+    if (err) {
+      console.log("DB Write Error:", err);
+    }
+    //redirection to /urls/:shortURL
+    res.redirect("/urls/" + newShortURL);
   }
-  //redirection to /urls/:shortURL
-  res.redirect("/urls/" + newShortURL);
 });
 //POST: delete a url
 app.post("/urls/:shortURL/delete", (req, res) => {
-  const selShortURL = req.params.shortURL;
-  delete urlDatabase[selShortURL];
-  //Writefile to save the database here.
-  if (!writeToDB(urlDbFilePath, urlDatabase, err)) {
-    console.log(err);
-    return;
+  if (!req.cookies[userCookieName]) {
+    res.send("Unauthorized operation.");
+  } else {
+    const selShortURL = req.params.shortURL;
+    delete urlDatabase[selShortURL];
+    //Writefile to save the database here.
+    let err = null;
+    writeToDB(urlDbFilePath, urlDatabase, err);
+    if (err) {
+      console.log("DB Write Error:", err);
+    }
+    //redirection to /urls (List)
+    res.redirect("/urls");
   }
-  //redirection to /urls (List)
-  res.redirect("/urls");
 });
 //POST: Update Long url
 app.post("/urls/:shortURL", (req, res) => {
-  urlDatabase[req.params.shortURL] = req.body.longURL;
-  if (!writeToDB(urlDbFilePath, urlDatabase, err)) {
-    console.log(err);
-    return;
+
+  urlDatabase[req.params.shortURL].longURL = req.body.longURL;
+  let err = null;
+  writeToDB(urlDbFilePath, urlDatabase, err);
+  if (err) {
+    console.log("DB Write Error:", err);
   }
   res.redirect("/urls");
+  return;
 });
-//GET: login page
-app.get("/login", (req, res) => {
-  let templateVars = null;
-  if (req.cookies[userCookieName]) {
-    templateVars = { user_id: req.cookies[userCookieName] };
-  } else {
-    templateVars = { user_id: undefined };
-  }
-  res.render("login",templateVars);
-});
+
 //POST: login page
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
@@ -189,12 +213,21 @@ app.post("/logout", (req, res) => {
   res.clearCookie(userCookieName);
   res.redirect("/urls");
 });
+
+app.listen(PORT, () => {
+  console.log(`Eample app listening on port ${PORT}`);
+});
+
 /*
 urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xk": "http://www.google.com"
 };
+
+{"b2xVn2": { longURL: "http://www.lighthouselabs.ca", userID: "userRandomID" },
+"IQl8eU": { longURL: "http://www.modindsoft.com", userID: "userRandomID" },
+"UH3tPM": { longURL: "http://www.oldscollege.ca", userID: "userRandomID" },
+"3Vi53G": { longURL: "http://www.pillar.ca", userID: "user2RandomID" },
+"obhTDY": { longURL: "www.newone.com", userID: "user2RandomID" }
+}
 */
-app.listen(PORT, () => {
-  console.log(`Eample app listening on port ${PORT}`);
-});

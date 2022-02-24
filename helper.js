@@ -21,11 +21,13 @@ const emailExists = function(usersIn, emailIn) {
 const writeToDB = function(urlDbFilePath, urlDatabaseIn, errOut) {
   fs.writeFile(urlDbFilePath, JSON.stringify(urlDatabaseIn), function(err) {
     if (err) {
-      errOut=err;
+      console.log("writeToDB Err", err);
+      errOut = err;
       return false;
     }
-  return true;
+    console.log("wtb success");
+    return true;
   });
-}
+};
 
 module.exports = { generateRandomString, emailExists, writeToDB };

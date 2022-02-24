@@ -17,8 +17,10 @@
         <tr>
           <th scope="col">Short URL</th>
           <th scope="col">Long URL</th>
+          <% if (user_id) { %>
           <th scope="col">Edit</th>
           <th scope="col">Delete</th>
+          <% } %>
         </tr>
       </thead>
       <tbody>
@@ -26,11 +28,13 @@
           <tr>
             
             <td><%= url %></td>
-            <td><a href="urls/<%= url %>"><%= urls[url] %></a></td>
+            <td><a href="urls/<%= url %>"><%= urls[url].longURL %></a></td>
+            <% if (user_id) { %>
             <td><a href="urls/<%= url %>"><button class="btn btn-primary">Edit</button></a></td>
             <form method="POST" action="/urls/<%= url %>/delete">
               <td><button type="submit" class="btn btn-primary">Delete</button></td>
             </form>
+            <% } %>
           </tr>
         <% } %>
       </tbody>
