@@ -20,7 +20,7 @@ const path = require('path');
 const fs = require('fs');
 
 //helper functions
-const { generateRandomString, emailExists, loadDb, writeToDB } = require("./helper");
+const { generateRandomString, emailExists, writeToDB } = require("./helper");
 
 const app = express();
 const PORT = 8080;
