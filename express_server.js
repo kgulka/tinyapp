@@ -9,16 +9,24 @@ const generateRandomString = function() {
 };
 const users = {
   "userRandomID": {
-    id: "userRandomID", 
-    email: "user@example.com", 
+    id: "userRandomID",
+    email: "user@example.com",
     password: "purple-monkey-dinosaur"},
   "user2RandomID": {
-    id: "user2RandomID", 
-    email: "user2@example.com", 
+    id: "user2RandomID",
+    email: "user2@example.com",
     password: "dishwasher-funk"
   }
 };
 
+const emailExists = function(usersIn, emailIn) {
+  for (let user in usersIn) {
+    if (usersIn[user].email === emailIn) {
+      return true;
+    }
+  }
+  return false;
+};
 const { application, response } = require("express");
 const express = require("express");
 
@@ -56,14 +64,14 @@ fs.readFile(dbFilePath, (err, fileContent) => {
 
 //*****ROUTES********
 //*******************
-//show the Database Object in JSON
+//GET: show the Database Object in JSON
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
-//Show List of URLs
+//GET: Show List of URLs
 app.get("/urls", (req, res) => {
   let templateVars = {};
-  console.log("user_id:", req.cookies["user_id"]);
+  console.log("user_id1:", req.cookies["user_id"]);
   if (req.cookies["user_id"]) {
     templateVars = { user_id: req.cookies["user_id"], urls: urlDatabase };
   } else {
@@ -71,24 +79,24 @@ app.get("/urls", (req, res) => {
   }
   res.render("urls_index", templateVars);
 });
-//Show new URL page
+//GET: Show new URL page
 app.get("/urls/new", (req, res)=> {
   let templateVars = {};
   if (req.cookies["user_id"]) {
-    console.log("user_id:", req.cookies["user_id"]);
+    console.log("user_id2:", req.cookies["user_id"]);
     templateVars = { user_id: req.cookies["user_id"], urls: urlDatabase };
   } else {
     templateVars = { user_id: undefined, urls: urlDatabase };
   }
   res.render("urls_new", templateVars);
 });
-//Show shortened url
+//GET: Show shortened url
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = { user_id: req.cookies["user_id"],
     shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL] };
   res.render("urls_show", templateVars);
 });
-//shortened single url
+//GET: shortened single url
 app.get("/u/:shortURL", (req, res) => {
   const longURL  = urlDatabase[req.params.shortURL];
 
@@ -98,20 +106,13 @@ app.get("/u/:shortURL", (req, res) => {
     res.redirect("/urls");
   }
 });
-//register user 
+//GET: register user
 app.get("/register", (req, res) => {
   const templateVars = { user_id: req.cookies["user_id"] };
   res.render("register", templateVars);
 });
-const emailExists = function(usersIn, emailIn) {
-  for (let user in usersIn) {
-    if (usersIn[user].email === emailIn) {
-      return true;
-    }
-  }
-  return false;
-}
-//write a new user to the list
+
+//POST: write a new user to the list
 app.post("/register", (req, res) => {
 
   const newUserID = generateRandomString();
@@ -119,7 +120,7 @@ app.post("/register", (req, res) => {
   
   if (emailExists(users, email)) {
     console.log('email already exists!');
-    
+
     res.statusCode = 400;
     return res.send('email already exists!');
   }
@@ -131,7 +132,7 @@ app.post("/register", (req, res) => {
   }
   users[newUserID] = { id: newUserID, email, password };
   console.log("Users Obj:", users);
- // urlDatabase[newShortURL] = req.body.longURL;
+  //urlDatabase[newShortURL] = req.body.longURL;
   //Writefile to save the database here.
   /*
   fs.writeFile(dbFilePath, JSON.stringify(urlDatabase), function(err) {
@@ -146,7 +147,7 @@ app.post("/register", (req, res) => {
   res.redirect("/urls");
 });
 
-//write a new URL to the list
+//POST: write a new URL to the list
 app.post("/urls", (req, res) => {
   //console.log(req.body);  // Log the POST request body to the console
   const newShortURL = generateRandomString();
@@ -161,7 +162,7 @@ app.post("/urls", (req, res) => {
   //redirection to /urls/:shortURL
   res.redirect("/urls/" + newShortURL);
 });
-//delete a url
+//POST: delete a url
 app.post("/urls/:shortURL/delete", (req, res) => {
   //console.log("PARAMS:", req.params);  // Log the POST request body to the console
   const selShortURL = req.params.shortURL;
@@ -176,7 +177,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   //redirection to /urls (List)
   res.redirect("/urls");
 });
-//Update Long url
+//POST: Update Long url
 app.post("/urls/:shortURL", (req, res) => {
   urlDatabase[req.params.shortURL] = req.body.longURL;
   fs.writeFile(dbFilePath, JSON.stringify(urlDatabase), function(err) {
@@ -187,38 +188,33 @@ app.post("/urls/:shortURL", (req, res) => {
   });
   res.redirect("/urls");
 });
-// header login username
+//GET: login page
+app.get("/login", (req, res) => {
+  let templateVars = null;
+  if (req.cookies["user_id"]) {
+    templateVars = { user_id: req.cookies["user_id"] };
+  } else {
+    templateVars = { user_id: undefined };
+  }
+  res.render("login",templateVars);
+});
+//POST: login page
 app.post("/login", (req, res) => {
   console.log("bodyUserN:",req.body.user_id);
-  res.cookie("user_id",req.body.user_id); 
+  res.cookie("user_id",req.body.user_id);
   console.log("cookie set");
   res.redirect("/urls");
 });
-// header logout user_id
+//POST: logout user_id
 app.post("/logout", (req, res) => {
   res.clearCookie("user_id");
   res.redirect("/urls");
 });
-
 /*
 urlDatabase = {
   "b2xVn2": "http://www.lighthouselabs.ca",
   "9sm5xk": "http://www.google.com"
 };
-app.get("/", (req, res) => {
-  res.send("hello!");
-});
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-})
-app.get("/set", (req, res) => {
-  const a = 1;
-  res.send(`a = ${a}`);
- });
- 
- app.get("/fetch", (req, res) => {
-  res.send(`a = ${a}`);
- });
 */
 app.listen(PORT, () => {
   console.log(`Eample app listening on port ${PORT}`);
