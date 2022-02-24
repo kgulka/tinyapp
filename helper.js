@@ -29,5 +29,13 @@ const writeToDB = function(urlDbFilePath, urlDatabaseIn, errOut) {
     return true;
   });
 };
-
-module.exports = { generateRandomString, emailExists, writeToDB };
+const urlsForUser = function(urlDB, userID) {
+  const urlsOut = {};
+  for (let key in urlDB) {
+    if (urlDB[key].userID === userID) {
+      urlsOut[key] = urlDB[key];
+    }
+  }
+  return urlsOut;
+};
+module.exports = { generateRandomString, emailExists, writeToDB, urlsForUser };

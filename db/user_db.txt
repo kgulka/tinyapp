@@ -1,1 +1,1 @@
-{"userRandomID":{"id":"userRandomID","email":"user@example.com","password":"pmd"},"user2RandomID":{"id":"user2RandomID","email":"user2@example.com","password":"dishwasher-funk"},"cTI8Aj":{"id":"cTI8Aj","email":"rob@bob.com","password":"qwerty"}}
+{"aNhzQ5":{"id":"aNhzQ5","email":"newuser@example.com","password":"$2a$10$XUu6eHO1N3hBz/b34OAEeeOmg7ssDlmTRLICUrX1.mYhmNgtic16C"}}
