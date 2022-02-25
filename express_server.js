@@ -40,7 +40,6 @@ fs.readFile(urlDbFilePath, (err, fileContent) => {
     //display the error
     console.log("readFile Error:", err);
   } else {
-    console.log(JSON.parse(fileContent));
     urlDatabase = JSON.parse(fileContent);
   }
 });
@@ -52,7 +51,6 @@ fs.readFile(userDbFilePath, (err, fileContent) => {
     //display the error
     console.log("readFile Error:", err);
   } else {
-    console.log(JSON.parse(fileContent));
     users = JSON.parse(fileContent);
   }
 });
@@ -293,36 +291,3 @@ app.post("/logout", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Eample app listening on port ${PORT}`);
 });
-
-
-/*
-///////////Below are URL and User DB file samples.///////////////
-urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xk": "http://www.google.com"
-};
-
-{"b2xVn2": { longURL: "http://www.lighthouselabs.ca", userID: "userRandomID" },
-"IQl8eU": { longURL: "http://www.modindsoft.com", userID: "userRandomID" },
-"UH3tPM": { longURL: "http://www.oldscollege.ca", userID: "userRandomID" },
-"3Vi53G": { longURL: "http://www.pillar.ca", userID: "user2RandomID" },
-"obhTDY": { longURL: "www.newone.com", userID: "user2RandomID" }
-}
-
-//Last URL DB sample
-{"PU0HsF":{"longURL":"http://www.example.com","userID":"aNhzQ5"},"tl1fQ9":{"longURL":"http://www.modindsoft.com","userID":"aNhzQ5"}}
-
-const users = {
-  "userRandomID": {
-    id: "userRandomID",
-    email: "user@example.com",
-    password: "pmd"},
-  "user2RandomID": {
-    id: "user2RandomID",
-    email: "user2@example.com",
-    password: "dishwasher-funk"
-  }
-};
-//Last User DB Sample
-{"aNhzQ5":{"id":"aNhzQ5","email":"newuser@example.com","password":"$2a$10$XUu6eHO1N3hBz/b34OAEeeOmg7ssDlmTRLICUrX1.mYhmNgtic16C"},"vn1JYv":{"id":"vn1JYv","email":"rob@bob.com","password":"$2a$10$6GLLDaVgxwRegnlYAFHJhODLsNIXzKMn./iTWx2wEBySYl.Lklyq2"}}
-*/
