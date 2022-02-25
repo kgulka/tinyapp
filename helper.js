@@ -9,6 +9,7 @@ const generateRandomString = function() {
   }
   return result;
 };
+
 const emailExists = function(usersIn, emailIn) {
   for (let user in usersIn) {
     if (usersIn[user].email === emailIn) {
@@ -29,6 +30,7 @@ const writeToDB = function(urlDbFilePath, urlDatabaseIn, errOut) {
     return true;
   });
 };
+
 const urlsForUser = function(urlDB, userID) {
   const urlsOut = {};
   for (let key in urlDB) {

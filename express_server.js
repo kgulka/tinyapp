@@ -61,8 +61,12 @@ fs.readFile(userDbFilePath, (err, fileContent) => {
 
 ////////////GETS/////////////////
 //GET: show the Database Object in JSON
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
+app.get("/", (req, res) => {
+  if (req.session[userCookieName]) {
+    res.redirect("/urls");
+  } else {
+    res.redirect("/login");
+  }
 });
 //GET: Show List of URLs
 app.get("/urls", (req, res) => {
@@ -79,7 +83,7 @@ app.get("/urls", (req, res) => {
 //GET: Show new URL page
 app.get("/urls/new", (req, res)=> {
   if (!req.session[userCookieName]) {
-    res.redirect("/urls");
+    res.redirect("/login");
   } else {
     let templateVars = {};
     if (req.session[userCookieName]) {
@@ -89,6 +93,7 @@ app.get("/urls/new", (req, res)=> {
     } else {
       res.redirect("/login");
     }
+    
   }
 });
 //GET: Show shortened url
@@ -114,7 +119,7 @@ app.get("/urls/:shortURL", (req, res) => {
 //GET: shortened single url
 app.get("/u/:shortURL", (req, res) => {
   if (urlDatabase[req.params.shortURL] === undefined) {
-    res.send("URL Not Found");
+    res.redirect("/msg?msg=URL Not Found");
     return;
   }
   const longURL  = urlDatabase[req.params.shortURL].longURL;
@@ -143,6 +148,22 @@ app.get("/login", (req, res) => {
     res.render("login",templateVars);
   }
 });
+//GET: message page
+app.get("/msg", (req, res) => {
+  let templateVars = null;
+  let msg = req.query.msg;
+
+  if (!req.session[userCookieName]) {
+    templateVars = { user_id: undefined, msg: msg };
+  } else {
+    if (req.session[userCookieName]) {
+      templateVars = { user_id: req.session[userCookieName] , msg: msg};
+    } else {
+      templateVars = { user_id: undefined, msg: msg };
+    }
+  }
+  res.render("msg_page",templateVars);
+});
 ////////////POSTS/////////////////
 //POST: write a new user to the list
 app.post("/register", (req, res) => {
@@ -152,13 +173,15 @@ app.post("/register", (req, res) => {
   if (!email || !password) {
     console.log('invalid email or password');
     res.statusCode = 400;
-    return res.send('invalid email or password');
+    const msgStr = encodeURIComponent('invalid email or password');
+    return res.redirect("/msg?msg=" + msgStr);
   }
   
   if (emailExists(users, email)) {
     console.log('email already exists!');
     res.statusCode = 400;
-    return res.send('email already exists!');
+    const msgStr = encodeURIComponent('email already exists!');
+    return res.redirect("/msg?msg=" + msgStr);
   }
   users[newUserID] = { id: newUserID, email, password: bcrypt.hashSync(password, 10) };
   req.session[userCookieName] = users[newUserID];
@@ -172,7 +195,8 @@ app.post("/register", (req, res) => {
 //POST: write a new URL to the list
 app.post("/urls", (req, res) => {
   if (!req.session[userCookieName]) {
-    res.send("Unauthorized operation.");
+    const msgStr = encodeURIComponent('Unauthorized operation.');
+    return res.redirect("/msg?msg=" + msgStr);
   } else {
     const newShortURL = generateRandomString();
     urlDatabase[newShortURL] = { longURL: req.body.longURL, userID: req.session[userCookieName].id };
@@ -191,11 +215,13 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   let urls = {};
   const selShortURL = req.params.shortURL;
   if (!req.session[userCookieName]) {
-    return res.send("Unauthorized operation.");
+    const msgStr = encodeURIComponent('Unauthorized operation.');
+    return res.redirect("/msg?msg=" + msgStr);
   }
   urls = urlsForUser(urlDatabase, req.session[userCookieName].id);
   if (!urls[selShortURL]) {
-    return res.send("Unauthorized operation.");
+    const msgStr = encodeURIComponent('Unauthorized operation.');
+    return res.redirect("/msg?msg=" + msgStr);
   }
   //ok to go ahead with the delete.
   delete urlDatabase[selShortURL];
@@ -215,11 +241,13 @@ app.post("/urls/:shortURL", (req, res) => {
   const selShortURL = req.params.shortURL;
 
   if (!req.session[userCookieName]) {
-    return res.send("Unauthorized operation.");
+    const msgStr = encodeURIComponent('Unauthorized operation.');
+    return res.redirect("/msg?msg=" + msgStr);
   }
   urls = urlsForUser(urlDatabase, req.session[userCookieName].id);
   if (!urls[selShortURL]) {
-    return res.send("Unauthorized operation.");
+    const msgStr = encodeURIComponent('Unauthorized operation.');
+    return res.redirect("/msg?msg=" + msgStr);
   }
   urlDatabase[selShortURL].longURL = req.body.longURL;
   let err = null;
@@ -237,18 +265,21 @@ app.post("/login", (req, res) => {
   if (!email || !password) {
     console.log('invalid email or password');
     res.statusCode = 403;
-    return res.send('invalid email or password');
+    const msgStr = encodeURIComponent('invalid email or password');
+    return res.redirect("/msg?msg=" + msgStr);
   }
   const user = emailExists(users, email);
   if (!user) {
     console.log('email does not exist!');
     res.statusCode = 403;
-    return res.send('Error Logging In!');
+    const msgStr = encodeURIComponent('Error Logging In!');
+    return res.redirect("/msg?msg=" + msgStr);
   }
   if (!bcrypt.compareSync(password, users[user].password)) {
     console.log('password incorrect!');
     res.statusCode = 403;
-    return res.send('Error Logging In!');
+    const msgStr = encodeURIComponent('Error Logging In!');
+    return res.redirect("/msg?msg=" + msgStr);
   }
   req.session[userCookieName] = users[user];
   res.redirect("/urls");
