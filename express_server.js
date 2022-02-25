@@ -56,7 +56,6 @@ fs.readFile(userDbFilePath, (err, fileContent) => {
 });
 
 //*****ROUTES********
-
 ////////////GETS/////////////////
 //GET: show the Database Object in JSON
 app.get("/", (req, res) => {
