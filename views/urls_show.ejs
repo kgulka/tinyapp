@@ -18,12 +18,16 @@
       
         <form class="form-inline" method="POST" action="/urls/<%= shortURL %>/">
         <div class="form-group mb-2">  
-          <% if (user_id && shortURL) { %>
-          <label for="longURL">Update URL:</label>
-          <input class="form-control" type="text" name="longURL" placeholder="http://" style="width: 300px; margin: 1em">
-          <button type="submit" class="btn btn-primary">Submit</button>
+          <% if (user_id) { %>
+            <% if (shortURL) { %>
+              <label for="longURL">Update URL:</label>
+              <input class="form-control" type="text" name="longURL" placeholder="http://" style="width: 300px; margin: 1em">
+              <button type="submit" class="btn btn-primary">Submit</button>
+            <% } else { %>
+              <p>Access to this URL is not authorized.</p>
+            <% } %>      
           <% } else { %>
-            <p>Access to URL not authorized.</p>
+            <p>Access not authorized.  Please login.</p>
           <% } %>
         </div>
     </form>
